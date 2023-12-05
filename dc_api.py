@@ -229,14 +229,24 @@ class API:
         doc_head_container = doc_head_containers[0]
         if len(doc_content_container):
             title = " ".join(doc_head_container[0].text.strip().split())
-            author = doc_head_container[1][0][0].text.strip()
-            author_id = None if len(doc_head_container[1]) <= 1 else doc_head_container[1][1][0].get("href").split("/")[-1]
+            if len(title) == 0:
+                title = "null"  # Set title to null if it's empty
+            if doc_head_container[1][0][0].text == None:
+                author = "null"  # Set author to null if it's empty
+            else:
+                author = doc_head_container[1][0][0].text.strip()
+            author_id = None if len(doc_head_container[1]) <= 1 else doc_head_container[1][1][0].get("href").split("/")[
+                -1]
             time = doc_head_container[1][0][1].text.strip()
             doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
             for adv in doc_content.xpath("div[@class='adv-groupin']"):
                 adv.getparent().remove(adv)
+            for adv in doc_content.xpath("div[@class='adv-groupno']"):
+                adv.getparent().remove(adv)
             for adv in doc_content.xpath("//img"):
                 if adv.get("src", "").startswith("https://nstatic") and not adv.get("data-original"):
+                    adv.getparent().remove(adv)
+                if adv.get("src", "").startswith("https://m.dcinside.com") and not adv.get("data-original"):
                     adv.getparent().remove(adv)
             return Document(
                     id = document_id,
@@ -246,33 +256,28 @@ class API:
                     author_id =author_id,
                     contents= '\n'.join(i.strip() for i in doc_content.itertext() if i.strip() and not i.strip().startswith("이미지 광고")),
                     images= [Image(
-                        src=i.get("data-original", i.get("src")), 
-                        board_id=board_id, 
-                        document_id=document_id, 
+                        src=i.get("data-original", i.get("src")),
+                        board_id=board_id,
+                        document_id=document_id,
                         session=self.session)
-                        for i in doc_content.xpath("//img") 
+                        for i in doc_content.xpath("//img")
                             if i.get("data-original") or (not i.get("src","").startswith("https://nstatic") and
                                 not i.get("src", "").startswith("https://img.iacstatic.co.kr") and i.get("src"))],
                     html= lxml.html.tostring(doc_content, encoding=str),
                     view_count= int(parsed.xpath("//ul[@class='ginfo2']")[1][0].text.strip().split()[1]),
-                    voteup_count= int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip()),
-                    votedown_count= int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip()),
+                  #  voteup_count= int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip()),
+                 #   votedown_count= int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip()),
+                    voteup_count=int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip().replace(',', '')),
+                # 추천수가 1000을 넘어가는 경우 ,가 포함됨
+                    votedown_count=int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip().replace(',', '')),
+                # 비추수가 1000을 넘어가는 경우 ,가 포함됨
                     logined_voteup_count= int(parsed.xpath("//span[@id='recomm_btn_member']")[0].text.strip()),
                     comments= lambda: self.comments(board_id, document_id),
                     time= self.__parse_time(time)
                     )
         else:
-            # fail due to unusual tags in mobile version
-            # at now, just skip it
             return None
-        ''' !TODO: use an alternative(PC) protocol to fetch document
-        else:
-            url = "https://gall.dcinside.com/{}?no={}".format(board_id, document_id)
-            res = sess.get(url, timeout=TIMEOUT, headers=ALTERNATIVE_GET_HEADERS)
-            parsed = lxml.html.fromstring(res.text)
-            doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
-            return '\n'.join(i.strip() for i in doc_content.itertext() if i.strip() and not i.strip().startswith("이미지 광고")), [i.get("src") for i in doc_content.xpath("//img") if not i.get("src","").startswith("https://nstatic")], comments(board_id, document_id, sess=sess)
-        '''
+
     async def comments(self, board_id, document_id, num=-1, start_page=1):
         url = "https://m.dcinside.com/ajax/response-comment"
         for page in range(start_page, 999999):
@@ -298,10 +303,10 @@ class API:
             if page_num_els:
                 p = page_num_els[0].itertext()
                 next(p)
-                if page == next(p)[1:]: 
+                if page == next(p)[1:]:
                     break
-            else: 
-                break 
+            else:
+                break
     async def write_comment(self, board_id, document_id, contents="", dccon_id="", dccon_src="", parent_comment_id="", name="", password="", is_minor=False):
         url = "https://m.dcinside.com/board/{}/{}".format(board_id, document_id)
         async with self.session.get(url) as res:
@@ -324,7 +329,6 @@ class API:
         url = "https://m.dcinside.com/ajax/comment-write"
         payload = {
                 "comment_memo": contents,
-                "comment_nick": name,
                 "comment_pw": password,
                 "mode": "com_write",
                 "comment_no": parent_comment_id,
@@ -530,9 +534,9 @@ class API:
         headers["X-CSRF-TOKEN"] = csrf_token
         async with self.session.post(url, headers=headers, data=payload) as res:
             return (await res.json())["Block_key"]
-    def __parse_time(self, time): 
-        today = datetime.now() 
-        if len(time) <= 5: 
+    def __parse_time(self, time):
+        today = datetime.now()
+        if len(time) <= 5:
             if time.find(":") > 0:
                 return datetime.strptime(time, "%H:%M").replace(year=today.year, month=today.month, day=today.day)
             else:
@@ -697,4 +701,3 @@ if version.major >= 3 and version.minor >= 8:
 
 if __name__ == "__main__":
     unittest.main()
-
