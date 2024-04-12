@@ -231,12 +231,17 @@ class API:
             title = " ".join(doc_head_container[0].text.strip().split())
             if len(title) == 0:
                 title = "null"  # Set title to null if it's empty
-            if doc_head_container[1][0][0].text == None:
-                author = "null"  # Set author to null if it's empty
+        author_elem = doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]")
+        if author_elem:
+            author_text = author_elem[0].text_content().strip()
+            if author_text:
+                author = author_text
             else:
-                author = doc_head_container[1][0][0].text.strip()
-            author_id = None if len(doc_head_container[1]) <= 1 else doc_head_container[1][1][0].get("href").split("/")[
-                -1]
+                author = "null"  # Set author to null if it's empty
+        else:
+            author = "null"  # Set author to null if it's empty
+    
+        author_id = None if len(doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]/a")) == 0 else doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]/a/@href")[0].split("/")[-1]
             time = doc_head_container[1][0][1].text.strip()
             doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
             for adv in doc_content.xpath("div[@class='adv-groupin']"):
