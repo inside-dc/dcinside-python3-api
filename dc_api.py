@@ -240,7 +240,8 @@ class API:
                     author = "null"
             else:
                 author = "null"
-            time = doc_head_container.xpath(".//ul[@class='ginfo2']/li[2]/text()").strip()
+            time_elements = doc_head_container.xpath(".//ul[@class='ginfo2']/li[2]/text()")
+            time = " ".join(time_elements).strip() if time_elements else ""
             doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
             for adv in doc_content.xpath("div[@class='adv-groupin']"):
                 adv.getparent().remove(adv)
