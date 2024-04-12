@@ -240,6 +240,7 @@ class API:
                     author = "null"
             else:
                 author = "null"
+            author_id = "null" #willfix
             time_elements = doc_head_container.xpath(".//ul[@class='ginfo2']/li[2]/text()")
             time = " ".join(time_elements).strip() if time_elements else ""
             doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
