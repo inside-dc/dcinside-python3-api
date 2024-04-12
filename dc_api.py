@@ -217,42 +217,42 @@ class API:
                 break
             else: 
                 page+=1
-    async def document(self, board_id, document_id):
-        url = "https://m.dcinside.com/board/{}/{}".format(board_id, document_id)
-        async with self.session.get(url) as res:
-            text = await res.text()
-            parsed = lxml.html.fromstring(text)
-        doc_content_container = parsed.xpath("//div[@class='thum-txtin']")
-        doc_head_containers = parsed.xpath("//div[starts-with(@class, 'gallview-tit-box')]")
-        if not len(doc_head_containers):
-            return None
-        doc_head_container = doc_head_containers[0]
-        if len(doc_content_container):
-            title = " ".join(doc_head_container[0].text.strip().split())
-            if len(title) == 0:
-                title = "null"  # Set title to null if it's empty
-        author_elem = doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]")
-        if author_elem:
-            author_text = author_elem[0].text_content().strip()
-            if author_text:
-                author = author_text
-            else:
-                author = "null"  # Set author to null if it's empty
+async def document(self, board_id, document_id):
+    url = "https://m.dcinside.com/board/{}/{}".format(board_id, document_id)
+    async with self.session.get(url) as res:
+        text = await res.text()
+        parsed = lxml.html.fromstring(text)
+    doc_content_container = parsed.xpath("//div[@class='thum-txtin']")
+    doc_head_containers = parsed.xpath("//div[starts-with(@class, 'gallview-tit-box')]")
+    if not len(doc_head_containers):
+        return None
+    doc_head_container = doc_head_containers[0]
+    if len(doc_content_container):
+        title = " ".join(doc_head_container[0].text.strip().split())
+        if len(title) == 0:
+            title = "null"  # Set title to null if it's empty
+    author_elem = doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]")
+    if author_elem:
+        author_text = author_elem[0].text_content().strip()
+        if author_text:
+            author = author_text
         else:
             author = "null"  # Set author to null if it's empty
-    
-        author_id = None if len(doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]/a")) == 0 else doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]/a/@href")[0].split("/")[-1]
-            time = doc_head_container[1][0][1].text.strip()
-            doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
-            for adv in doc_content.xpath("div[@class='adv-groupin']"):
-                adv.getparent().remove(adv)
-            for adv in doc_content.xpath("div[@class='adv-groupno']"):
-                adv.getparent().remove(adv)
-            for adv in doc_content.xpath("//img"):
-                if adv.get("src", "").startswith("https://nstatic") and not adv.get("data-original"):
-                    adv.getparent().remove(adv)
-                if adv.get("src", "").startswith("https://m.dcinside.com") and not adv.get("data-original"):
-                    adv.getparent().remove(adv)
+    else:
+        author = "null"  # Set author to null if it's empty
+
+    author_id = None if len(doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]/a")) == 0 else doc_head_container.xpath(".//ul[@class='ginfo2']/li[1]/a/@href")[0].split("/")[-1]
+    time = doc_head_container[1][0][1].text.strip()
+    doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
+    for adv in doc_content.xpath("div[@class='adv-groupin']"):
+        adv.getparent().remove(adv)
+    for adv in doc_content.xpath("div[@class='adv-groupno']"):
+        adv.getparent().remove(adv)
+    for adv in doc_content.xpath("//img"):
+        if adv.get("src", "").startswith("https://nstatic") and not adv.get("data-original"):
+            adv.getparent().remove(adv)
+        if adv.get("src", "").startswith("https://m.dcinside.com") and not adv.get("data-original"):
+            adv.getparent().remove(adv)
             return Document(
                     id = document_id,
                     board_id = board_id,
