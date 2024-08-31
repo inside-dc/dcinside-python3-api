@@ -270,12 +270,10 @@ class API:
                                 not i.get("src", "").startswith("https://img.iacstatic.co.kr") and i.get("src"))],
                     html= lxml.html.tostring(doc_content, encoding=str),
                     view_count= int(parsed.xpath("//ul[@class='ginfo2']")[1][0].text.strip().split()[1]),
-                  #  voteup_count= int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip()),
-                 #   votedown_count= int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip()),
-                    voteup_count=int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip().replace(',', '')),
-                # 추천수가 1000을 넘어가는 경우 ,가 포함됨
-                    votedown_count=int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip().replace(',', '')),
-                # 비추수가 1000을 넘어가는 경우 ,가 포함됨
+                    
+                    # Note: if the number of votes are greater than 1000, comma is added
+                    voteup_count=int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip().replace(',', '')), 
+                    votedown_count=int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip().replace(',', '') if parsed.xpath("//span[@id='nonrecomm_btn']") else 0), # Note: some galleries don't have vote down
                     logined_voteup_count= int(parsed.xpath("//span[@id='recomm_btn_member']")[0].text.strip()),
                     comments= lambda: self.comments(board_id, document_id),
                     time= self.__parse_time(time)
@@ -550,7 +548,7 @@ class API:
             if time.find(":") > 0:
                 return datetime.strptime(time, "%m.%d %H:%M").replace(year=today.year)
             else:
-                return datetime.strptime(time, "%y.%m.%d").replace(year=today.year, hour=23, minute=59, second=59)
+                return datetime.strptime(time, "%y.%m.%d").replace(hour=23, minute=59, second=59)
         elif len(time) <= 16:
             if time.count(".") >= 2:
                 return datetime.strptime(time, "%Y.%m.%d %H:%M")
