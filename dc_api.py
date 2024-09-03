@@ -289,16 +289,16 @@ class API:
                 parsed = lxml.html.fromstring(await res.text())
             if not len(parsed[1].xpath("li")): break
             for li in parsed[1].xpath("li"):
-                if not len(li[0]) or not li[0].text: continue
+                if not len(li): continue
                 yield Comment(
-                    id= li.get("no"),
+                    id = li.get("no", None),
                     is_reply = "comment-add" in li.get("class", "").strip().split(),
-                    author = li[0].text + ("{}".format(li[0][0].text) if li[0][0].text else ""),
-                    author_id= li[0][1].get("data-info", None) if len(li[0]) > 1 else None,
-                    contents= '\n'.join(i.strip() for i in li[1].itertext()),
-                    dccon= li[1][0].get("data-original", li[1][0].get("src", None)) if len(li[1]) and li[1][0].tag=="img" else None,
-                    voice= li[1][0].get("src", None) if len(li[1]) and li[1][0].tag=="iframe" else None,
-                    time= self.__parse_time(li[2].text))
+                    author = ''.join(li[0].itertext()) if len(li[0]) else None,
+                    author_id = li[0][1].get("data-info", None) if len(li[0]) > 1 else None,
+                    contents = '\n'.join(i.strip() for i in li[1].itertext()) if len(li) > 1 else ''.join(li[0].itertext()),
+                    dccon = li[1][0].get("data-original", li[1][0].get("src", None)) if len(li) > 1 and len(li[1]) and li[1][0].tag=="img" else None,
+                    voice = li[1][0].get("src", None) if len(li) > 1 and len(li[1]) and li[1][0].tag=="iframe" else None,
+                    time = self.__parse_time(li[2].text) if len(li) > 2 else None)
                 num -= 1
                 if num == 0:
                     return
