@@ -270,12 +270,10 @@ class API:
                                 not i.get("src", "").startswith("https://img.iacstatic.co.kr") and i.get("src"))],
                     html= lxml.html.tostring(doc_content, encoding=str),
                     view_count= int(parsed.xpath("//ul[@class='ginfo2']")[1][0].text.strip().split()[1]),
-                  #  voteup_count= int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip()),
-                 #   votedown_count= int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip()),
-                    voteup_count=int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip().replace(',', '')),
-                # 추천수가 1000을 넘어가는 경우 ,가 포함됨
-                    votedown_count=int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip().replace(',', '')),
-                # 비추수가 1000을 넘어가는 경우 ,가 포함됨
+                    
+                    # Note: if the number of votes are greater than 1000, comma is added
+                    voteup_count=int(parsed.xpath("//span[@id='recomm_btn']")[0].text.strip().replace(',', '')), 
+                    votedown_count=int(parsed.xpath("//span[@id='nonrecomm_btn']")[0].text.strip().replace(',', '') if parsed.xpath("//span[@id='nonrecomm_btn']") else 0), # Note: some galleries don't have vote down
                     logined_voteup_count= int(parsed.xpath("//span[@id='recomm_btn_member']")[0].text.strip()),
                     comments= lambda: self.comments(board_id, document_id),
                     time= self.__parse_time(time)
@@ -291,16 +289,16 @@ class API:
                 parsed = lxml.html.fromstring(await res.text())
             if not len(parsed[1].xpath("li")): break
             for li in parsed[1].xpath("li"):
-                if not len(li[0]) or not li[0].text: continue
+                if not len(li): continue
                 yield Comment(
-                    id= li.get("no"),
+                    id = li.get("no", None),
                     is_reply = "comment-add" in li.get("class", "").strip().split(),
-                    author = li[0].text + ("{}".format(li[0][0].text) if li[0][0].text else ""),
-                    author_id= li[0][1].get("data-info", None) if len(li[0]) > 1 else None,
-                    contents= '\n'.join(i.strip() for i in li[1].itertext()),
-                    dccon= li[1][0].get("data-original", li[1][0].get("src", None)) if len(li[1]) and li[1][0].tag=="img" else None,
-                    voice= li[1][0].get("src", None) if len(li[1]) and li[1][0].tag=="iframe" else None,
-                    time= self.__parse_time(li[2].text))
+                    author = ''.join(li[0].itertext()) if len(li[0]) else None,
+                    author_id = li[0][1].get("data-info", None) if len(li[0]) > 1 else None,
+                    contents = '\n'.join(i.strip() for i in li[1].itertext()) if len(li) > 1 else ''.join(li[0].itertext()),
+                    dccon = li[1][0].get("data-original", li[1][0].get("src", None)) if len(li) > 1 and len(li[1]) and li[1][0].tag=="img" else None,
+                    voice = li[1][0].get("src", None) if len(li) > 1 and len(li[1]) and li[1][0].tag=="iframe" else None,
+                    time = self.__parse_time(li[2].text) if len(li) > 2 else None)
                 num -= 1
                 if num == 0:
                     return
@@ -550,7 +548,7 @@ class API:
             if time.find(":") > 0:
                 return datetime.strptime(time, "%m.%d %H:%M").replace(year=today.year)
             else:
-                return datetime.strptime(time, "%y.%m.%d").replace(year=today.year, hour=23, minute=59, second=59)
+                return datetime.strptime(time, "%y.%m.%d").replace(hour=23, minute=59, second=59)
         elif len(time) <= 16:
             if time.count(".") >= 2:
                 return datetime.strptime(time, "%Y.%m.%d %H:%M")
