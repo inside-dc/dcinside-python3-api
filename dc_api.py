@@ -240,7 +240,12 @@ class API:
                     author = "null"
             else:
                 author = "null"
-            author_id = "null" #willfix
+            author_id_elem = parsed.xpath("/html/body/div[1]/div/div/section[3]/div[1]/div/ul/li[1]/a")
+            if author_id_elem and len(author_id_elem) > 0:
+                    author_id = author_id_elem[0].get('href', '').split('/')[-1]  # Get the last part of href which contains the ID
+            else:
+                    author_id = None
+                
             time_elements = doc_head_container.xpath(".//ul[@class='ginfo2']/li[2]/text()")
             time = " ".join(time_elements).strip() if time_elements else ""
             doc_content = parsed.xpath("//div[@class='thum-txtin']")[0]
